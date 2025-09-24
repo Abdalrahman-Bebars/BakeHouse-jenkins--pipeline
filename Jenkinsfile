@@ -1,12 +1,12 @@
 pipeline {
     agent none
     stages {
-        stage('Echo Branch Info') {
-            agent any
-            steps {
-                echo "Hello from branch ${env.BRANCH_NAME}"
-            }
-        }
+        // stage('Echo Branch Info') {
+        //     agent any
+        //     steps {
+        //         echo "Hello from branch ${env.BRANCH_NAME}"
+        //     }
+        // }
         
         stage('Build on Instance Agent') {
             agent { label 'aws' }
