@@ -1,71 +1,33 @@
 pipeline {
-    agent any
-  
-    options {
-        timestamps()
-        timeout(time: 20 , unit: 'MINUTES')
-    }
-    parameters {
-        string(name: 'CONTAINER_NAME', defaultValue: 'nginx-app', description: 'Base container name')
-        choice(name: 'DEPLOY_ENV', choices: ['dev','staging','prod'], description: 'Deployment environment')
-    }
-
-    environment {
-        CONTAINER_NAME = 'nginx-app'   
-        DOCKER_REGISTRY = 'abdo23' 
-        DOCKER_IMAGE = 'first-try'
-        DEPLOY_ENV = 'dev'
-       // MY_CREDS = credentials('docker-cred')   > used with>  echo  $MY_CREDS_PSW | docker login -u $MY_CREDS_USR --password-stdin
-
-    }
-
-
+    agent none
     stages {
-        stage('build docker image') {
+        stage('Echo Branch Info') {
+            agent any
             steps {
-                // or use username and password (token) 
-                git 'https://github.com/abdelrahmanmetwally/BakeHouse-jenkins--pipeline.git'
-                echo ' start '
-                sh ' docker build -f ./other-dockerfile/Dockerfile -t $DOCKER_IMAGE ./other-dockerfile/'
-
-            }
-
-        }
-        stage('Push Docker Image') {
-            steps {
-                script {
-                    sh "docker tag $DOCKER_IMAGE $DOCKER_REGISTRY/$DOCKER_IMAGE:$BUILD_NUMBER"
-
-                    withCredentials([usernamePassword( credentialsId: 'docker-cred', usernameVariable: 'USER', passwordVariable: 'PASS' )]) {
-                    sh """
-                        echo $PASS | docker login -u $USER --password-stdin 
-                        docker push $DOCKER_REGISTRY/$DOCKER_IMAGE:$BUILD_NUMBER
-                    """
-                    }
-                }
+                echo "Hello from branch ${env.BRANCH_NAME}"
             }
         }
-        stage('Approval to Deploy') {
+        
+        stage('Build on Instance Agent') {
+            agent { label 'ec2-agent' }
             steps {
-                timeout(time: 15, unit: 'MINUTES') {
-                    input message: "Deploy ${DOCKER_IMAGE}:${BUILD_NUMBER} to ${DEPLOY_ENV}?", ok: 'Deploy'
-                }
+                checkout scm
+                sh 'docker build -t app-instance:latest .'
+                sh 'docker stop app-instance || true'
+                sh 'docker rm app-instance || true'
+                sh 'docker run -d --rm --name app-instance -p 3001:3000 app-instance:latest'
             }
         }
-        stage('deploy') {
+        
+        stage('Build on Docker Agent') {
+            agent { label 'docker-agent' }
             steps {
-                sh ' docker rm -f $CONTAINER_NAME-$DEPLOY_ENV  || true'
-                sh 'docker run -d --name $CONTAINER_NAME-$DEPLOY_ENV -p 80:80 $DOCKER_REGISTRY/$DOCKER_IMAGE:$BUILD_NUMBER'
+                checkout scm
+                sh 'docker build -t app:latest .'
+                sh 'docker stop app-container || true'
+                sh 'docker rm app-container || true'
+                sh 'docker run -d --rm --name app-container -p 3000:3000 app:latest'
             }
-        }    
-    }
-    post {
-        success {
-            echo "pipeline succeeded "
-            build job: 'freestyle-1'
-        }
-        failure {
-            echo "pipeline failed"
         }
     }
 }
