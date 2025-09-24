@@ -9,7 +9,7 @@ pipeline {
         }
         
         stage('Build on Instance Agent') {
-            agent { label 'ec2-agent' }
+            agent { label 'aws' }
             steps {
                 checkout scm
                 sh 'docker build -t app-instance:latest .'
@@ -20,7 +20,7 @@ pipeline {
         }
         
         stage('Build on Docker Agent') {
-            agent { label 'docker-agent' }
+            agent { label 'container' }
             steps {
                 checkout scm
                 sh 'docker build -t app:latest .'
