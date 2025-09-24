@@ -8,26 +8,26 @@ pipeline {
             }
         }
         
-        // stage('Build on Instance Agent') {
-        //     agent { label 'aws' }
-        //     steps {
-        //         checkout scm
-        //         sh 'docker build -t app-instance:latest .'
-        //         sh 'docker stop app-instance || true'
-        //         sh 'docker rm app-instance || true'
-        //         sh 'docker run -d --rm --name app-instance -p 3001:3000 app-instance:latest'
-        //     }
-        // }
+        stage('Build on Instance Agent') {
+            agent { label 'aws' }
+            steps {
+                checkout scm
+                sh 'docker build -t app-instance:latest .'
+                sh 'docker stop app-instance || true'
+                sh 'docker rm app-instance || true'
+                sh 'docker run -d --rm --name app-instance -p 3001:3000 app-instance:latest'
+            }
+        }
         
-        // stage('Build on Docker Agent') {
-        //     agent { label 'container' }
-        //     steps {
-        //         checkout scm
-        //         sh 'docker build -t app:latest .'
-        //         sh 'docker stop app-container || true'
-        //         sh 'docker rm app-container || true'
-        //         sh 'docker run -d --rm --name app-container -p 3000:3000 app:latest'
-        //     }
-        // }
+        stage('Build on Docker Agent') {
+            agent { label 'container' }
+            steps {
+                checkout scm
+                sh 'docker build -t app:latest .'
+                sh 'docker stop app-container || true'
+                sh 'docker rm app-container || true'
+                sh 'docker run -d --rm --name app-container -p 3000:3000 app:latest'
+            }
+        }
     }
 }
